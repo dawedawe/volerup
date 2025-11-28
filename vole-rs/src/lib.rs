@@ -15,6 +15,15 @@ impl Cpu {
         }
     }
 
+    pub fn init(program: &[u8]) -> Self {
+        let mut cpu = Cpu::new();
+        if program.len() > cpu.main_memory.len() {
+            panic!("given program does not fit into memory");
+        }
+        cpu.main_memory[..program.len()].copy_from_slice(program);
+        cpu
+    }
+
     pub fn fetch(&self) -> Instruction {
         let instr_byte0 = self.main_memory[self.program_counter];
         let instr_byte1 = self.main_memory[self.program_counter + 1];
@@ -238,38 +247,34 @@ mod tests {
 
     #[test]
     pub fn opcode_loadaddr_works() {
-        let mut cpu = Cpu::new();
+        let program = [0x14, 0xA3];
+        let mut cpu = Cpu::init(&program);
         cpu.main_memory[0xA3] = 0xCD;
-        cpu.main_memory[0] = 0x14;
-        cpu.main_memory[1] = 0xA3;
         cpu.step();
         assert_eq!(cpu.general_purpose_registers[0x04], 0xCD)
     }
 
     #[test]
     pub fn opcode_loadvalue_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x20;
-        cpu.main_memory[1] = 0xA3;
+        let program = [0x20, 0xA3];
+        let mut cpu = Cpu::init(&program);
         cpu.step();
         assert_eq!(cpu.general_purpose_registers[0x00], 0xA3)
     }
 
     #[test]
     pub fn opcode_store_works() {
-        let mut cpu = Cpu::new();
+        let program = [0x35, 0xB1];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[5] = 0x58;
-        cpu.main_memory[0] = 0x35;
-        cpu.main_memory[1] = 0xB1;
         cpu.step();
         assert_eq!(cpu.main_memory[0xB1], 0x58)
     }
 
     #[test]
     pub fn opcode_move_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x40;
-        cpu.main_memory[1] = 0xA4;
+        let program = [0x40, 0xA4];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0xA] = 0xFF;
         cpu.step();
         assert_eq!(cpu.general_purpose_registers[0x04], 0xFF)
@@ -277,9 +282,8 @@ mod tests {
 
     #[test]
     pub fn opcode_addint_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x57;
-        cpu.main_memory[1] = 0x26;
+        let program = [0x57, 0x26];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x02] = 0x03;
         cpu.general_purpose_registers[0x06] = 0x05;
         cpu.step();
@@ -288,9 +292,8 @@ mod tests {
 
     #[test]
     pub fn opcode_addfloat_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x63;
-        cpu.main_memory[1] = 0x4E;
+        let program = [0x63, 0x4E];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x04] = 0x03;
         cpu.general_purpose_registers[0x0E] = 0x05;
         cpu.step();
@@ -299,9 +302,8 @@ mod tests {
 
     #[test]
     pub fn opcode_or_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x7C;
-        cpu.main_memory[1] = 0xB4;
+        let program = [0x7C, 0xB4];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x0B] = 0xF0;
         cpu.general_purpose_registers[0x04] = 0x0F;
         cpu.step();
@@ -310,9 +312,8 @@ mod tests {
 
     #[test]
     pub fn opcode_and_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x80;
-        cpu.main_memory[1] = 0x45;
+        let program = [0x80, 0x45];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x04] = 0xF3;
         cpu.general_purpose_registers[0x05] = 0x05;
         cpu.step();
@@ -321,9 +322,8 @@ mod tests {
 
     #[test]
     pub fn opcode_xor_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0x95;
-        cpu.main_memory[1] = 0xF3;
+        let program = [0x95, 0xF3];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x0F] = 0xF3;
         cpu.general_purpose_registers[0x03] = 0x05;
         cpu.step();
@@ -332,9 +332,8 @@ mod tests {
 
     #[test]
     pub fn opcode_rotate_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0xA4;
-        cpu.main_memory[1] = 0x03;
+        let program = [0xA4, 0x03];
+        let mut cpu = Cpu::init(&program);
         cpu.general_purpose_registers[0x04] = 0x07;
         cpu.step();
         assert_eq!(cpu.general_purpose_registers[0x04], 0xE0)
@@ -342,9 +341,8 @@ mod tests {
 
     #[test]
     pub fn opcode_jump_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0xB4;
-        cpu.main_memory[1] = 0x3C;
+        let program = [0xB4, 0x3C];
+        let mut cpu = Cpu::init(&program);
         cpu.main_memory[0x3C] = 0xAB;
         cpu.general_purpose_registers[0x00] = 0x05;
         cpu.general_purpose_registers[0x04] = 0x05;
@@ -354,8 +352,8 @@ mod tests {
 
     #[test]
     pub fn opcode_halt_works() {
-        let mut cpu = Cpu::new();
-        cpu.main_memory[0] = 0xC0;
+        let program = [0xC0];
+        let mut cpu = Cpu::init(&program);
         cpu.step();
         assert!(cpu.halted)
     }
