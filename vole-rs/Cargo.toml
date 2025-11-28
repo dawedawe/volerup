@@ -1,0 +1,9 @@
+[package]
+name = "vole-rs"
+version = "0.1.0"
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+description = "An implementation of the Vole Machine Language for education and fun."
+
+[dependencies]

@@ -1,0 +1,8 @@
+[workspace]
+members = ["vole-rs"]
+resolver = "2"
+
+[workspace.package]
+license = "MIT"
+edition = "2024"
+repository = "https://codeberg.org/dawe/voleru"
