@@ -1,8 +1,8 @@
 use crate::floating::Floating;
 
 pub struct Cpu {
-    pub general_purpose_registers: [u8; 16],
-    pub main_memory: [u8; 256],
+    pub registers: [u8; 16],
+    pub memory: [u8; 256],
     pub program_counter: usize,
     pub halted: bool,
 }
@@ -10,8 +10,8 @@ pub struct Cpu {
 impl Cpu {
     pub fn new() -> Self {
         Cpu {
-            general_purpose_registers: [0; 16],
-            main_memory: [0; 256],
+            registers: [0; 16],
+            memory: [0; 256],
             program_counter: 0,
             halted: false,
         }
@@ -19,16 +19,16 @@ impl Cpu {
 
     pub fn init(program: &[u8]) -> Self {
         let mut cpu = Cpu::new();
-        if program.len() > cpu.main_memory.len() {
+        if program.len() > cpu.memory.len() {
             panic!("given program does not fit into memory");
         }
-        cpu.main_memory[..program.len()].copy_from_slice(program);
+        cpu.memory[..program.len()].copy_from_slice(program);
         cpu
     }
 
     pub fn fetch(&self) -> Instruction {
-        let instr_byte0 = self.main_memory[self.program_counter];
-        let instr_byte1 = self.main_memory[self.program_counter + 1];
+        let instr_byte0 = self.memory[self.program_counter];
+        let instr_byte1 = self.memory[self.program_counter + 1];
         let mut instr: u16 = (instr_byte0 as u16) << 8;
         instr |= instr_byte1 as u16;
         Instruction { instr }
@@ -97,29 +97,27 @@ impl Cpu {
     fn execute(&mut self, opcode: OpCodes) {
         match opcode {
             OpCodes::LoadAddr { reg, addr: address } => {
-                self.general_purpose_registers[reg as usize] = self.main_memory[address as usize];
+                self.registers[reg as usize] = self.memory[address as usize];
             }
             OpCodes::LoadValue { reg, value } => {
-                self.general_purpose_registers[reg as usize] = value;
+                self.registers[reg as usize] = value;
             }
             OpCodes::Store { reg, addr } => {
-                self.main_memory[addr as usize] = self.general_purpose_registers[reg as usize];
+                self.memory[addr as usize] = self.registers[reg as usize];
             }
             OpCodes::Move {
                 source_reg,
                 target_reg,
             } => {
-                self.general_purpose_registers[target_reg as usize] =
-                    self.general_purpose_registers[source_reg as usize];
+                self.registers[target_reg as usize] = self.registers[source_reg as usize];
             }
             OpCodes::AddInt {
                 target_reg,
                 reg1,
                 reg2,
             } => {
-                self.general_purpose_registers[target_reg as usize] = self
-                    .general_purpose_registers[reg1 as usize]
-                    + self.general_purpose_registers[reg2 as usize];
+                self.registers[target_reg as usize] =
+                    self.registers[reg1 as usize] + self.registers[reg2 as usize];
             }
             OpCodes::AddFloat {
                 target_reg,
@@ -127,50 +125,46 @@ impl Cpu {
                 reg2,
             } => {
                 let f1 = Floating {
-                    value: self.general_purpose_registers[reg1 as usize],
+                    value: self.registers[reg1 as usize],
                 };
                 let f2 = Floating {
-                    value: self.general_purpose_registers[reg2 as usize],
+                    value: self.registers[reg2 as usize],
                 };
                 let sum = f1.decode() + f2.decode();
                 let f3 = Floating::encode(sum);
-                self.general_purpose_registers[target_reg as usize] = f3.value
+                self.registers[target_reg as usize] = f3.value
             }
             OpCodes::Or {
                 target_reg,
                 reg1,
                 reg2,
             } => {
-                self.general_purpose_registers[target_reg as usize] = self
-                    .general_purpose_registers[reg1 as usize]
-                    | self.general_purpose_registers[reg2 as usize];
+                self.registers[target_reg as usize] =
+                    self.registers[reg1 as usize] | self.registers[reg2 as usize];
             }
             OpCodes::And {
                 target_reg,
                 reg1,
                 reg2,
             } => {
-                self.general_purpose_registers[target_reg as usize] = self
-                    .general_purpose_registers[reg1 as usize]
-                    & self.general_purpose_registers[reg2 as usize];
+                self.registers[target_reg as usize] =
+                    self.registers[reg1 as usize] & self.registers[reg2 as usize];
             }
             OpCodes::Xor {
                 target_reg,
                 reg1,
                 reg2,
             } => {
-                self.general_purpose_registers[target_reg as usize] = self
-                    .general_purpose_registers[reg1 as usize]
-                    ^ self.general_purpose_registers[reg2 as usize];
+                self.registers[target_reg as usize] =
+                    self.registers[reg1 as usize] ^ self.registers[reg2 as usize];
             }
             OpCodes::Rotate { reg, times } => {
-                self.general_purpose_registers[reg as usize] =
-                    self.general_purpose_registers[reg as usize].rotate_right(times as u32)
+                self.registers[reg as usize] =
+                    self.registers[reg as usize].rotate_right(times as u32)
             }
             OpCodes::Jump { reg, addr } => {
-                if self.general_purpose_registers[0] == self.general_purpose_registers[reg as usize]
-                {
-                    self.program_counter = self.main_memory[addr as usize] as usize;
+                if self.registers[0] == self.registers[reg as usize] {
+                    self.program_counter = self.memory[addr as usize] as usize;
                 }
             }
             OpCodes::Halt => {
@@ -257,9 +251,9 @@ mod tests {
     pub fn opcode_loadaddr_works() {
         let program = [0x14, 0xA3];
         let mut cpu = Cpu::init(&program);
-        cpu.main_memory[0xA3] = 0xCD;
+        cpu.memory[0xA3] = 0xCD;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x04], 0xCD)
+        assert_eq!(cpu.registers[0x04], 0xCD)
     }
 
     #[test]
@@ -267,93 +261,93 @@ mod tests {
         let program = [0x20, 0xA3];
         let mut cpu = Cpu::init(&program);
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x00], 0xA3)
+        assert_eq!(cpu.registers[0x00], 0xA3)
     }
 
     #[test]
     pub fn opcode_store_works() {
         let program = [0x35, 0xB1];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[5] = 0x58;
+        cpu.registers[5] = 0x58;
         cpu.step();
-        assert_eq!(cpu.main_memory[0xB1], 0x58)
+        assert_eq!(cpu.memory[0xB1], 0x58)
     }
 
     #[test]
     pub fn opcode_move_works() {
         let program = [0x40, 0xA4];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0xA] = 0xFF;
+        cpu.registers[0xA] = 0xFF;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x04], 0xFF)
+        assert_eq!(cpu.registers[0x04], 0xFF)
     }
 
     #[test]
     pub fn opcode_addint_works() {
         let program = [0x57, 0x26];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x02] = 0x03;
-        cpu.general_purpose_registers[0x06] = 0x05;
+        cpu.registers[0x02] = 0x03;
+        cpu.registers[0x06] = 0x05;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x07], 0x08)
+        assert_eq!(cpu.registers[0x07], 0x08)
     }
 
     #[test]
     pub fn opcode_addfloat_works() {
         let program = [0x63, 0x4E];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x04] = 0x03;
-        cpu.general_purpose_registers[0x0E] = 0x05;
+        cpu.registers[0x04] = 0x03;
+        cpu.registers[0x0E] = 0x05;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x03], 0x08)
+        assert_eq!(cpu.registers[0x03], 0x08)
     }
 
     #[test]
     pub fn opcode_or_works() {
         let program = [0x7C, 0xB4];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x0B] = 0xF0;
-        cpu.general_purpose_registers[0x04] = 0x0F;
+        cpu.registers[0x0B] = 0xF0;
+        cpu.registers[0x04] = 0x0F;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x0C], 0xFF)
+        assert_eq!(cpu.registers[0x0C], 0xFF)
     }
 
     #[test]
     pub fn opcode_and_works() {
         let program = [0x80, 0x45];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x04] = 0xF3;
-        cpu.general_purpose_registers[0x05] = 0x05;
+        cpu.registers[0x04] = 0xF3;
+        cpu.registers[0x05] = 0x05;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x00], 0x01)
+        assert_eq!(cpu.registers[0x00], 0x01)
     }
 
     #[test]
     pub fn opcode_xor_works() {
         let program = [0x95, 0xF3];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x0F] = 0xF3;
-        cpu.general_purpose_registers[0x03] = 0x05;
+        cpu.registers[0x0F] = 0xF3;
+        cpu.registers[0x03] = 0x05;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x05], 0xF6)
+        assert_eq!(cpu.registers[0x05], 0xF6)
     }
 
     #[test]
     pub fn opcode_rotate_works() {
         let program = [0xA4, 0x03];
         let mut cpu = Cpu::init(&program);
-        cpu.general_purpose_registers[0x04] = 0x07;
+        cpu.registers[0x04] = 0x07;
         cpu.step();
-        assert_eq!(cpu.general_purpose_registers[0x04], 0xE0)
+        assert_eq!(cpu.registers[0x04], 0xE0)
     }
 
     #[test]
     pub fn opcode_jump_works() {
         let program = [0xB4, 0x3C];
         let mut cpu = Cpu::init(&program);
-        cpu.main_memory[0x3C] = 0xAB;
-        cpu.general_purpose_registers[0x00] = 0x05;
-        cpu.general_purpose_registers[0x04] = 0x05;
+        cpu.memory[0x3C] = 0xAB;
+        cpu.registers[0x00] = 0x05;
+        cpu.registers[0x04] = 0x05;
         cpu.step();
         assert_eq!(cpu.program_counter, 0xAB)
     }
