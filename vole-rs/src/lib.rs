@@ -1,3 +1,7 @@
+use crate::floating::Floating;
+
+pub mod floating;
+
 pub struct Cpu {
     pub general_purpose_registers: [u8; 16],
     pub main_memory: [u8; 256],
@@ -124,9 +128,15 @@ impl Cpu {
                 reg1,
                 reg2,
             } => {
-                self.general_purpose_registers[target_reg as usize] = self
-                    .general_purpose_registers[reg1 as usize]
-                    + self.general_purpose_registers[reg2 as usize];
+                let f1 = Floating {
+                    value: self.general_purpose_registers[reg1 as usize],
+                };
+                let f2 = Floating {
+                    value: self.general_purpose_registers[reg2 as usize],
+                };
+                let sum = f1.decode() + f2.decode();
+                let f3 = Floating::encode(sum);
+                self.general_purpose_registers[target_reg as usize] = f3.value
             }
             OpCodes::Or {
                 target_reg,
