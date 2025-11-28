@@ -4,6 +4,7 @@ pub struct Cpu {
     pub registers: [u8; 16],
     pub memory: [u8; 256],
     pub program_counter: usize,
+    pub instruction_register: u16,
     pub halted: bool,
 }
 
@@ -13,6 +14,7 @@ impl Cpu {
             registers: [0; 16],
             memory: [0; 256],
             program_counter: 0,
+            instruction_register: 0x0000,
             halted: false,
         }
     }
@@ -26,31 +28,55 @@ impl Cpu {
         cpu
     }
 
-    pub fn fetch(&self) -> Instruction {
+    pub fn fetch(&mut self) {
         let instr_byte0 = self.memory[self.program_counter];
         let instr_byte1 = self.memory[self.program_counter + 1];
         let mut instr: u16 = (instr_byte0 as u16) << 8;
         instr |= instr_byte1 as u16;
-        Instruction { instr }
+        self.instruction_register = instr;
     }
 
-    fn decode(&self, instr: Instruction) -> OpCodes {
-        let opcode_bits = instr.get_opcode_bits();
-        let operand1 = instr.get_operand1_bits();
-        let operand2 = instr.get_operand2_bits();
-        let operand3 = instr.get_operand3_bits();
+    fn get_opcode_bits(instr: Instruction) -> u8 {
+        (instr >> 12) as u8
+    }
+
+    pub fn get_operand1_bits(instr: Instruction) -> u8 {
+        ((instr & 0x0F00) >> 8) as u8
+    }
+
+    pub fn get_operand2_bits(instr: Instruction) -> u8 {
+        ((instr & 0x00F0) >> 4) as u8
+    }
+
+    pub fn get_operand3_bits(instr: Instruction) -> u8 {
+        (instr & 0x000F) as u8
+    }
+
+    pub fn get_operand23_bits(instr: Instruction) -> u8 {
+        (instr & 0x00FF) as u8
+    }
+
+    pub fn get_operand_bits(instr: Instruction) -> u16 {
+        instr & 0x0FFF
+    }
+
+    fn decode(&self) -> OpCodes {
+        let opcode_bits = Cpu::get_opcode_bits(self.instruction_register);
+        let operand1 = Cpu::get_operand1_bits(self.instruction_register);
+        let operand2 = Cpu::get_operand2_bits(self.instruction_register);
+        let operand3 = Cpu::get_operand3_bits(self.instruction_register);
         match opcode_bits {
             0x1 => OpCodes::LoadAddr {
                 reg: operand1,
-                addr: instr.get_operand23_bits(),
+                addr: Cpu::get_operand23_bits(self.instruction_register),
             },
             0x2 => OpCodes::LoadValue {
                 reg: operand1,
-                value: instr.get_operand23_bits(),
+                value: Cpu::get_operand23_bits(self.instruction_register),
             },
             0x3 => OpCodes::Store {
                 reg: operand1,
-                addr: instr.get_operand23_bits(),
+                addr: Cpu::get_operand23_bits(self.instruction_register),
             },
             0x4 => OpCodes::Move {
                 source_reg: operand2,
@@ -87,7 +113,7 @@ impl Cpu {
             },
             0xB => OpCodes::Jump {
                 reg: operand1,
-                addr: instr.get_operand23_bits(),
+                addr: Cpu::get_operand23_bits(self.instruction_register),
             },
             0xC => OpCodes::Halt,
             _ => todo!(),
@@ -173,9 +199,10 @@ impl Cpu {
         }
     }
 
-    pub fn step(&mut self) {
-        let next_instruction = self.fetch();
-        let opcode = self.decode(next_instruction);
+    /// Do a full fetch-decode-ececute cycle
+    pub fn cycle(&mut self) {
+        self.fetch();
+        let opcode = self.decode();
         self.execute(opcode);
     }
 }
@@ -186,35 +213,7 @@ impl Default for Cpu {
     }
 }
 
-pub struct Instruction {
-    pub instr: u16,
-}
-
-impl Instruction {
-    pub fn get_opcode_bits(&self) -> u8 {
-        (self.instr >> 12) as u8
-    }
-
-    pub fn get_operand1_bits(&self) -> u8 {
-        ((self.instr & 0x0F00) >> 8) as u8
-    }
-
-    pub fn get_operand2_bits(&self) -> u8 {
-        ((self.instr & 0x00F0) >> 4) as u8
-    }
-
-    pub fn get_operand3_bits(&self) -> u8 {
-        (self.instr & 0x000F) as u8
-    }
-
-    pub fn get_operand23_bits(&self) -> u8 {
-        (self.instr & 0x00FF) as u8
-    }
-
-    pub fn get_operand_bits(&self) -> u16 {
-        self.instr & 0x0FFF
-    }
-}
+pub type Instruction = u16;
 
 pub enum OpCodes {
     LoadAddr { reg: u8, addr: u8 },                  // 0x1
@@ -236,23 +235,11 @@ mod tests {
     use super::*;
 
     #[test]
-    pub fn get_opcode_bits_works() {
-        let i = Instruction { instr: 0x1234 };
-        assert_eq!(i.get_opcode_bits(), 0x01)
-    }
-
-    #[test]
-    pub fn get_operand_bits_works() {
-        let i = Instruction { instr: 0x1234 };
-        assert_eq!(i.get_operand_bits(), 0x0234)
-    }
-
-    #[test]
     pub fn opcode_loadaddr_works() {
         let program = [0x14, 0xA3];
         let mut cpu = Cpu::init(&program);
         cpu.memory[0xA3] = 0xCD;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x04], 0xCD)
     }
 
@@ -260,7 +247,7 @@ mod tests {
     pub fn opcode_loadvalue_works() {
         let program = [0x20, 0xA3];
         let mut cpu = Cpu::init(&program);
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x00], 0xA3)
     }
 
@@ -269,7 +256,7 @@ mod tests {
         let program = [0x35, 0xB1];
         let mut cpu = Cpu::init(&program);
         cpu.registers[5] = 0x58;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.memory[0xB1], 0x58)
     }
 
@@ -278,7 +265,7 @@ mod tests {
         let program = [0x40, 0xA4];
         let mut cpu = Cpu::init(&program);
         cpu.registers[0xA] = 0xFF;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x04], 0xFF)
     }
 
@@ -288,7 +275,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x02] = 0x03;
         cpu.registers[0x06] = 0x05;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x07], 0x08)
     }
 
@@ -298,7 +285,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x04] = 0x03;
         cpu.registers[0x0E] = 0x05;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x03], 0x08)
     }
 
@@ -308,7 +295,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x0B] = 0xF0;
         cpu.registers[0x04] = 0x0F;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x0C], 0xFF)
     }
 
@@ -318,7 +305,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x04] = 0xF3;
         cpu.registers[0x05] = 0x05;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x00], 0x01)
     }
 
@@ -328,7 +315,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x0F] = 0xF3;
         cpu.registers[0x03] = 0x05;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x05], 0xF6)
     }
 
@@ -337,7 +324,7 @@ mod tests {
         let program = [0xA4, 0x03];
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x04] = 0x07;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.registers[0x04], 0xE0)
     }
 
@@ -348,7 +335,7 @@ mod tests {
         cpu.memory[0x3C] = 0xAB;
         cpu.registers[0x00] = 0x05;
         cpu.registers[0x04] = 0x05;
-        cpu.step();
+        cpu.cycle();
         assert_eq!(cpu.program_counter, 0xAB)
     }
 
@@ -356,7 +343,7 @@ mod tests {
     pub fn opcode_halt_works() {
         let program = [0xC0];
         let mut cpu = Cpu::init(&program);
-        cpu.step();
+        cpu.cycle();
         assert!(cpu.halted)
     }
 }
