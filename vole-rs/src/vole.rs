@@ -197,6 +197,11 @@ impl Cpu {
                 self.halted = true;
             }
         }
+
+        match opcode {
+            OpCodes::Jump { reg: _, addr: _ } => (),
+            _ => self.program_counter += 2,
+        }
     }
 
     /// Do a full fetch-decode-ececute cycle
@@ -204,6 +209,13 @@ impl Cpu {
         self.fetch();
         let opcode = self.decode();
         self.execute(opcode);
+    }
+
+    /// Run till halt
+    pub fn run(&mut self) {
+        while !self.halted {
+            self.cycle();
+        }
     }
 }
 
@@ -345,5 +357,29 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.cycle();
         assert!(cpu.halted)
+    }
+
+    #[test]
+    pub fn run_works_1() {
+        let program = [0x14, 0x02, 0x34, 0x17, 0xC0, 0x00];
+        let mut cpu = Cpu::init(&program);
+        cpu.run();
+        assert!(cpu.halted);
+        assert_eq!(cpu.memory[0x17], 0x34)
+    }
+
+    #[test]
+    pub fn run_works_2a() {
+        let program = [0x13, 0xB8, 0xA3, 0x02, 0x33, 0xB8, 0xC0, 0x00, 0x0F];
+        let mut cpu = Cpu::new();
+        (0..program.len()).for_each(|a| {
+            cpu.memory[0xB0 + a] = program[a];
+        });
+        cpu.program_counter = 0xB0;
+        cpu.cycle();
+        assert_eq!(cpu.registers[0x03], 0x0F);
+        cpu.run();
+        assert!(cpu.halted);
+        assert_eq!(cpu.memory[0xB8], 0xC3);
     }
 }
