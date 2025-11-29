@@ -1,0 +1,13 @@
+[package]
+name = "voleru"
+version = "0.1.0"
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+description = "This is a Ratatui app to simulate a CPU with the Vole Machine Language for education and fun."
+
+[dependencies]
+crossterm = "0.28.1"
+ratatui = "0.29.0"
+color-eyre = "0.6.5"
+vole-rs = { path = "../vole-rs", version= "0.1.0" }

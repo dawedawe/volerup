@@ -1,5 +1,6 @@
 use crate::floating::Floating;
 
+#[derive(Debug)]
 pub struct Cpu {
     pub registers: [u8; 16],
     pub memory: [u8; 256],
