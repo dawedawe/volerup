@@ -8,8 +8,8 @@ use ratatui::{
 use crate::model::Model;
 
 fn create_list_widget<'a>(values: &[u8], title: &str, style: Style) -> List<'a> {
-    let items = values.iter().map(|reg| -> ListItem<'_> {
-        let s = format!(" 0x{:X} ", reg);
+    let items = values.iter().enumerate().map(|(idx, reg)| -> ListItem<'_> {
+        let s = format!("{:2}: 0x{:02X} ", idx, reg);
         ListItem::new(s).style(style)
     });
 
@@ -83,7 +83,7 @@ pub fn view(model: &Model, frame: &mut Frame) {
         );
     frame.render_widget(pc_paragraph, pc_rect);
 
-    let instr = format!("0x{:X}", model.cpu.instruction_register);
+    let instr = format!("0x{:02X}", model.cpu.instruction_register);
     let instr_reg_paragraph = Paragraph::new(instr).style(style).block(
         Block::default()
             .borders(Borders::ALL)
