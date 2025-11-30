@@ -1,22 +1,60 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Flex, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph},
+    layout::{Constraint, Direction, Flex, Layout, Margin, Rect},
+    style::{Color, Modifier, Style},
+    text::Line,
+    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
-use crate::model::Model;
+use crate::model::{Focus, Model};
 
-fn create_list_widget<'a>(values: &[u8], title: &str, style: Style) -> List<'a> {
-    let items = values.iter().enumerate().map(|(idx, reg)| -> ListItem<'_> {
-        let s = format!("{:2}: 0x{:02X} ", idx, reg);
-        ListItem::new(s).style(style)
-    });
+fn render_list(
+    values: &[u8],
+    title: &str,
+    style: Style,
+    focused: bool,
+    vertical_scroll: usize,
+    rect: Rect,
+    frame: &mut Frame,
+) {
+    let items = values
+        .iter()
+        .enumerate()
+        .map(|(idx, reg)| {
+            let s = format!("{:2}: 0x{:02X} ", idx, reg);
+            Line::from(s).style(style)
+        })
+        .collect::<Vec<Line>>();
 
-    List::new(items)
-        .block(Block::bordered().title(format!(" {title} ")))
-        .style(style)
-        .direction(ListDirection::TopToBottom)
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
+
+    let mut scrollbar_state = ScrollbarState::new(items.len()).position(vertical_scroll);
+
+    let block_style = if focused {
+        Style::default().add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+
+    let paragraph = Paragraph::new(items.clone())
+        .scroll((vertical_scroll as u16, 0))
+        .block(
+            Block::bordered()
+                .title(format!(" {}{} ", title, if focused { "*" } else { "" }))
+                .title_style(block_style),
+        );
+
+    frame.render_widget(paragraph, rect);
+    frame.render_stateful_widget(
+        scrollbar,
+        rect.inner(Margin {
+            vertical: 1,
+            horizontal: 0,
+        }),
+        &mut scrollbar_state,
+    );
 }
 
 pub fn view(model: &Model, frame: &mut Frame) {
@@ -96,12 +134,33 @@ pub fn view(model: &Model, frame: &mut Frame) {
     );
     frame.render_widget(instr_reg_paragraph, instr_reg_rect);
 
-    let regs_widget = create_list_widget(&model.cpu.registers, "Registers", style);
-    frame.render_widget(regs_widget, regs_rect);
+    render_list(
+        &model.cpu.registers,
+        "Registers",
+        style,
+        model.focus == Focus::Registers,
+        model.registers_scroll,
+        regs_rect,
+        frame,
+    );
 
-    let mem_widget = create_list_widget(&model.cpu.memory, "Main Memory", style);
-    frame.render_widget(mem_widget, mem_rect);
+    render_list(
+        &model.cpu.memory,
+        "Main Memory",
+        style,
+        model.focus == Focus::Memory,
+        model.memory_scroll,
+        mem_rect,
+        frame,
+    );
 
-    let prog_widget = create_list_widget(&model.program, "Program", style);
-    frame.render_widget(prog_widget, prog_rect);
+    render_list(
+        &model.program,
+        "Program",
+        style,
+        model.focus == Focus::Program,
+        model.program_scroll,
+        prog_rect,
+        frame,
+    );
 }
