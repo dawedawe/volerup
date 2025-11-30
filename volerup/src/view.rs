@@ -83,7 +83,12 @@ pub fn view(model: &Model, frame: &mut Frame) {
         );
     frame.render_widget(pc_paragraph, pc_rect);
 
-    let instr = format!("0x{:02X}", model.cpu.instruction_register);
+    let opcode = if let Some(opcode) = model.cpu.decode() {
+        format!("({})", opcode)
+    } else {
+        "".to_string()
+    };
+    let instr = format!("0x{:02X} {}", model.cpu.instruction_register, opcode);
     let instr_reg_paragraph = Paragraph::new(instr).style(style).block(
         Block::default()
             .borders(Borders::ALL)

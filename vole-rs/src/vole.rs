@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::floating::Floating;
 
 #[derive(Debug)]
@@ -61,63 +63,64 @@ impl Cpu {
         instr & 0x0FFF
     }
 
-    fn decode(&self) -> OpCodes {
+    /// Decode the bits in the instruction_register into an OpCode
+    pub fn decode(&self) -> Option<OpCodes> {
         let opcode_bits = Cpu::get_opcode_bits(self.instruction_register);
         let operand1 = Cpu::get_operand1_bits(self.instruction_register);
         let operand2 = Cpu::get_operand2_bits(self.instruction_register);
         let operand3 = Cpu::get_operand3_bits(self.instruction_register);
         match opcode_bits {
-            0x1 => OpCodes::LoadAddr {
+            0x1 => Some(OpCodes::LoadAddr {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
-            },
-            0x2 => OpCodes::LoadValue {
+            }),
+            0x2 => Some(OpCodes::LoadValue {
                 reg: operand1,
                 value: Cpu::get_operand23_bits(self.instruction_register),
-            },
-            0x3 => OpCodes::Store {
+            }),
+            0x3 => Some(OpCodes::Store {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
-            },
-            0x4 => OpCodes::Move {
+            }),
+            0x4 => Some(OpCodes::Move {
                 source_reg: operand2,
                 target_reg: operand3,
-            },
-            0x5 => OpCodes::AddInt {
+            }),
+            0x5 => Some(OpCodes::AddInt {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
-            },
-            0x6 => OpCodes::AddFloat {
+            }),
+            0x6 => Some(OpCodes::AddFloat {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
-            },
-            0x7 => OpCodes::Or {
+            }),
+            0x7 => Some(OpCodes::Or {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
-            },
-            0x8 => OpCodes::And {
+            }),
+            0x8 => Some(OpCodes::And {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
-            },
-            0x9 => OpCodes::Xor {
+            }),
+            0x9 => Some(OpCodes::Xor {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
-            },
-            0xA => OpCodes::Rotate {
+            }),
+            0xA => Some(OpCodes::Rotate {
                 reg: operand1,
                 times: operand3,
-            },
-            0xB => OpCodes::Jump {
+            }),
+            0xB => Some(OpCodes::Jump {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
-            },
-            0xC => OpCodes::Halt,
-            _ => todo!(),
+            }),
+            0xC => Some(OpCodes::Halt),
+            _ => None,
         }
     }
 
@@ -208,8 +211,11 @@ impl Cpu {
     /// Do a full fetch-decode-ececute cycle
     pub fn cycle(&mut self) {
         self.fetch();
-        let opcode = self.decode();
-        self.execute(opcode);
+        if let Some(opcode) = self.decode() {
+            self.execute(opcode);
+        } else {
+            panic!("illegal instruction")
+        }
     }
 
     /// Run till halt
@@ -241,6 +247,58 @@ pub enum OpCodes {
     Rotate { reg: u8, times: u8 },                   // 0xA
     Jump { reg: u8, addr: u8 },                      // 0xB
     Halt,                                            // 0xC
+}
+
+impl Display for OpCodes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpCodes::LoadAddr { reg, addr } => write!(f, "LOADADDR 0x{:02X} 0x{:02X}", reg, addr),
+            OpCodes::LoadValue { reg, value } => {
+                write!(f, "LOADVALUE 0x{:02X} 0x{:02X}", reg, value)
+            }
+            OpCodes::Store { reg, addr } => write!(f, "STORE 0x{:02X} 0x{:02X}", reg, addr),
+            OpCodes::Move {
+                source_reg,
+                target_reg,
+            } => write!(f, "MOVE 0x{:02X} 0x{:02X}", source_reg, target_reg),
+            OpCodes::AddInt {
+                target_reg,
+                reg1,
+                reg2,
+            } => write!(
+                f,
+                "ADDINT 0x{:02X} 0x{:02X} 0x{:02X}",
+                target_reg, reg1, reg2
+            ),
+            OpCodes::AddFloat {
+                target_reg,
+                reg1,
+                reg2,
+            } => write!(
+                f,
+                "ADDFLOAT 0x{:02X} 0x{:02X} 0x{:02X}",
+                target_reg, reg1, reg2
+            ),
+            OpCodes::Or {
+                target_reg,
+                reg1,
+                reg2,
+            } => write!(f, "OR 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
+            OpCodes::And {
+                target_reg,
+                reg1,
+                reg2,
+            } => write!(f, "AND 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
+            OpCodes::Xor {
+                target_reg,
+                reg1,
+                reg2,
+            } => write!(f, "XOR 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
+            OpCodes::Rotate { reg, times } => write!(f, "ROTATE 0x{:02X} 0x{:02X}", reg, times),
+            OpCodes::Jump { reg, addr } => write!(f, "JUMP 0x{:02X} 0x{:02X}", reg, addr),
+            OpCodes::Halt => write!(f, "HALT"),
+        }
+    }
 }
 
 #[cfg(test)]
