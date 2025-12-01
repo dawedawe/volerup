@@ -2,7 +2,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Flex, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
+    text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
@@ -42,6 +42,7 @@ fn render_list(
         .scroll((vertical_scroll as u16, 0))
         .block(
             Block::bordered()
+                .style(style)
                 .title(format!(" {}{} ", title, if focused { "*" } else { "" }))
                 .title_style(block_style),
         );
@@ -58,7 +59,7 @@ fn render_list(
 }
 
 pub fn view(model: &Model, frame: &mut Frame) {
-    let style: Style = Style::default().fg(Color::Yellow);
+    let style: Style = Style::default().fg(Color::Green);
 
     fn center_horizontal(area: Rect, width: u16) -> Rect {
         let [area] = Layout::horizontal([Constraint::Length(width)])
@@ -66,6 +67,12 @@ pub fn view(model: &Model, frame: &mut Frame) {
             .areas(area);
         area
     }
+
+    let whole_screen_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints([Constraint::Min(50), Constraint::Min(1)].as_ref())
+        .split(frame.area());
 
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -79,7 +86,9 @@ pub fn view(model: &Model, frame: &mut Frame) {
             ]
             .as_ref(),
         )
-        .split(frame.area());
+        .split(whole_screen_chunks[0]);
+
+    let help_msg_rect = center_horizontal(whole_screen_chunks[1], 80);
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -163,4 +172,18 @@ pub fn view(model: &Model, frame: &mut Frame) {
         prog_rect,
         frame,
     );
+
+    let msg = vec![
+        Span::styled("Space", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": exec CPU cycle, "),
+        Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": focus next control, "),
+        Span::styled("↑/↓", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": scroll up/down, "),
+        Span::styled("Esc/q", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": exit"),
+    ];
+    let text = Text::from(Line::from(msg));
+    let help_message = Paragraph::new(text);
+    frame.render_widget(help_message, help_msg_rect);
 }
