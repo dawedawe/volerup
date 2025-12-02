@@ -163,15 +163,25 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         frame,
     );
 
-    render_list(
-        &model.program,
-        "Program",
-        style,
-        model.focus == Focus::Program,
-        model.program_scroll,
-        prog_rect,
-        frame,
-    );
+    let editor_block = {
+        let (title, block_style) = if model.focus == Focus::Program {
+            ("Program*", style.add_modifier(Modifier::BOLD))
+        } else {
+            ("Program", style)
+        };
+
+        Block::default()
+            .borders(Borders::ALL)
+            .title(title)
+            .style(block_style)
+    };
+
+    frame.render_widget(editor_block, prog_rect);
+    let editor_rect = Layout::default()
+        .margin(1)
+        .constraints([Constraint::Percentage(100)].as_ref())
+        .split(prog_rect);
+    frame.render_widget(&model.program_textarea, editor_rect[0]);
 
     let msg = vec![
         Span::styled("Space", Style::default().add_modifier(Modifier::BOLD)),

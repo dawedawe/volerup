@@ -8,6 +8,7 @@ pub(crate) enum Msg {
     FocusPrevious,
     ScrollUp,
     ScrollDown,
+    KeyInput { key: Event },
 }
 
 pub(crate) fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>> {
@@ -18,12 +19,15 @@ pub(crate) fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>>
     }
 }
 
-fn on_key_event(_model: &mut Model, key: KeyEvent) -> Option<Msg> {
+fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => Some(Msg::Exit),
         KeyCode::Char(' ') => Some(Msg::Cycle),
         KeyCode::Tab => Some(Msg::FocusNext),
         KeyCode::BackTab => Some(Msg::FocusPrevious),
+        _ if model.focus == Focus::Program => Some(Msg::KeyInput {
+            key: crossterm::event::Event::Key(key),
+        }),
         KeyCode::Up => Some(Msg::ScrollUp),
         KeyCode::Down => Some(Msg::ScrollDown),
         _ => None,
@@ -67,6 +71,10 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
             }
             _ => (),
         },
+        Msg::KeyInput { key } if model.focus == Focus::Program => {
+            model.program_textarea.input(key);
+        }
+        _ => (),
     }
 }
 
