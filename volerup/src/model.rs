@@ -1,15 +1,15 @@
 use vole_rs::vole::Cpu;
 
 #[derive(Debug, PartialEq)]
-pub enum Focus {
+pub(crate) enum Focus {
     Registers,
     Memory,
     Program,
 }
 
 #[derive(Debug)]
-pub struct Model {
-    pub cpu: vole_rs::vole::Cpu,
+pub(crate) struct Model {
+    pub(crate) cpu: vole_rs::vole::Cpu,
     pub program: Vec<u8>,
     pub running: bool,
     pub focus: Focus,

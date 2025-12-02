@@ -58,7 +58,7 @@ fn render_list(
     );
 }
 
-pub fn view(model: &Model, frame: &mut Frame) {
+pub(crate) fn view(model: &Model, frame: &mut Frame) {
     let style: Style = Style::default().fg(Color::Green);
 
     fn center_horizontal(area: Rect, width: u16) -> Rect {

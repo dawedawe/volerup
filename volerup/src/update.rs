@@ -1,7 +1,7 @@
 use crate::model::{Focus, Model};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
-pub enum Msg {
+pub(crate) enum Msg {
     Exit,
     Cycle,
     FocusNext,
@@ -10,7 +10,7 @@ pub enum Msg {
     ScrollDown,
 }
 
-pub fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>> {
+pub(crate) fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>> {
     match event::read()? {
         // it's important to check KeyEventKind::Press to avoid handling key release events
         Event::Key(key) if key.kind == KeyEventKind::Press => Result::Ok(on_key_event(model, key)),
@@ -30,7 +30,7 @@ fn on_key_event(_model: &mut Model, key: KeyEvent) -> Option<Msg> {
     }
 }
 
-pub fn update(model: &mut Model, msg: Msg) {
+pub(crate) fn update(model: &mut Model, msg: Msg) {
     match msg {
         Msg::Exit => {
             model.running = false;
