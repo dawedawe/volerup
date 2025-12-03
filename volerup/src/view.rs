@@ -71,7 +71,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     let whole_screen_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
-        .constraints([Constraint::Min(50), Constraint::Min(1)].as_ref())
+        .constraints([Constraint::Min(70), Constraint::Min(2)].as_ref())
         .split(frame.area());
 
     let main_chunks = Layout::default()
@@ -88,7 +88,12 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         )
         .split(whole_screen_chunks[0]);
 
-    let help_msg_rect = center_horizontal(whole_screen_chunks[1], 80);
+    let footer_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)].as_ref())
+        .split(whole_screen_chunks[1]);
+    let error_msg_rect = center_horizontal(footer_chunks[0], 40);
+    let help_msg_rect = center_horizontal(footer_chunks[1], 113);
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -183,7 +188,15 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .split(prog_rect);
     frame.render_widget(&model.program_textarea, editor_rect[0]);
 
+    if let Some(msg) = model.error_msg {
+        let style = Style::default().fg(Color::Red);
+        let error_msg_paragraph = Paragraph::new(msg).style(style);
+        frame.render_widget(error_msg_paragraph, error_msg_rect);
+    }
+
     let msg = vec![
+        Span::styled("r", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": load program and reset CPU, "),
         Span::styled("Space", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": exec CPU cycle, "),
         Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
