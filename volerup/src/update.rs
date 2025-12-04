@@ -43,30 +43,45 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
     }
 }
 
+fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static str> {
+    let parse_lines = lines
+        .iter()
+        .filter_map(|line| {
+            let s = line
+                .trim()
+                .trim_start_matches("0x")
+                .trim_start_matches("0X");
+            if s.is_empty() {
+                None
+            } else {
+                Some(u8::from_str_radix(s, 16))
+            }
+        })
+        .collect::<Vec<Result<u8, ParseIntError>>>();
+    if parse_lines.iter().any(|r| r.is_err()) {
+        Result::Err("only byte values in hex notation allowed")
+    } else {
+        let input = parse_lines
+            .into_iter()
+            .map(|r| r.expect("expected a parsed u8"))
+            .collect::<Vec<u8>>();
+        Result::Ok(input)
+    }
+}
+
 pub(crate) fn update(model: &mut Model, msg: Msg) {
     match msg {
         Msg::Exit => {
             model.running = false;
         }
         Msg::Load => {
-            let input = model
-                .program_textarea
-                .lines()
-                .iter()
-                .map(|s| {
-                    let s = s.trim().trim_start_matches("0x").trim_start_matches("0X");
-                    u8::from_str_radix(s, 16)
-                })
-                .collect::<Vec<Result<u8, ParseIntError>>>();
-            if input.iter().any(|r| r.is_err()) {
-                model.error_msg = Some("only byte values in hex notation allowed")
-            } else {
-                model.error_msg = None;
-                let input = input
-                    .into_iter()
-                    .map(|r| r.expect("expected a parsed u8"))
-                    .collect::<Vec<u8>>();
-                model.cpu = Cpu::init(&input);
+            let input = parse_program_text(model.program_textarea.lines());
+            match input {
+                Ok(input) => {
+                    model.error_msg = None;
+                    model.cpu = Cpu::init(&input)
+                }
+                Err(msg) => model.error_msg = Some(msg),
             }
         }
         Msg::Cycle => {
@@ -108,12 +123,52 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
 #[cfg(test)]
 mod tests {
     use super::{Msg, update};
-    use crate::model::Model;
+    use crate::{model::Model, update::parse_program_text};
 
     #[test]
     fn test_exit_msg() {
         let mut model = Model::default();
         update(&mut model, Msg::Exit);
         assert!(!model.running)
+    }
+
+    #[test]
+    fn test_parse() {
+        let lines: &[String] = &[
+            "0x00".to_string(),
+            "0x01".to_string(),
+            "0xA2".to_string(),
+            "0xb3".to_string(),
+        ];
+        let r = parse_program_text(lines);
+        assert!(r.is_ok());
+        let r = r.unwrap();
+        assert_eq!(r, vec![0x00, 0x01, 0xA2, 0xB3]);
+    }
+
+    #[test]
+    fn test_parse_with_empty_lines() {
+        let lines: &[String] = &[
+            "0x00".to_string(),
+            " ".to_string(),
+            "0x01".to_string(),
+            "".to_string(),
+        ];
+        let r = parse_program_text(lines);
+        assert!(r.is_ok());
+        let r = r.unwrap();
+        assert_eq!(r, vec![0x00, 0x01]);
+    }
+
+    #[test]
+    fn test_parse_with_invalid_lines() {
+        let lines: &[String] = &[
+            "0x00".to_string(),
+            "x".to_string(),
+            "0x01".to_string(),
+            "".to_string(),
+        ];
+        let r = parse_program_text(lines);
+        assert!(r.is_err());
     }
 }
