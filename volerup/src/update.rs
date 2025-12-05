@@ -43,7 +43,7 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
     }
 }
 
-fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static str> {
+pub(crate) fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static str> {
     fn parse_single(s: &str) -> Result<u8, ParseIntError> {
         let s = s.trim().trim_start_matches("0x").trim_start_matches("0X");
         u8::from_str_radix(s, 16)
