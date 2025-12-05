@@ -170,9 +170,9 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
 
     let editor_block = {
         let (title, block_style) = if model.focus == Focus::Program {
-            ("Program*", style.add_modifier(Modifier::BOLD))
+            (" Program* ", style.add_modifier(Modifier::BOLD))
         } else {
-            ("Program", style)
+            (" Program ", style)
         };
 
         Block::default()
