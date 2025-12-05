@@ -9,14 +9,20 @@ pub(crate) enum Msg {
     Exit,
     /// Load program into memory
     Load,
+    /// Do a CPU cycle of fetch, decode, execute
     Cycle,
+    /// Focus the next controll
     FocusNext,
+    /// Focus the previous controll
     FocusPrevious,
+    /// Scroll up
     ScrollUp,
+    /// Scroll down
     ScrollDown,
-    KeyInput {
-        key: Event,
-    },
+    /// Toggle the help screen
+    ToggleHelp,
+    /// Input for the program editor
+    KeyInput { key: Event },
 }
 
 pub(crate) fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>> {
@@ -30,6 +36,7 @@ pub(crate) fn handle_event(model: &mut Model) -> color_eyre::Result<Option<Msg>>
 fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => Some(Msg::Exit),
+        KeyCode::Char('?') => Some(Msg::ToggleHelp),
         KeyCode::Char('r') => Some(Msg::Load),
         KeyCode::Char('p') => Some(Msg::Cycle),
         KeyCode::Tab => Some(Msg::FocusNext),
@@ -116,6 +123,9 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
         },
         Msg::KeyInput { key } if model.focus == Focus::Program => {
             model.program_textarea.input(key);
+        }
+        Msg::ToggleHelp => {
+            model.show_help = !model.show_help;
         }
         _ => (),
     }
