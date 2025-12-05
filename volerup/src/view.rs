@@ -70,13 +70,12 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
 
     let whole_screen_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(2)
+        .margin(1)
         .constraints([Constraint::Min(70), Constraint::Min(2)].as_ref())
         .split(frame.area());
 
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .margin(2)
         .constraints(
             [
                 Constraint::Ratio(1, 4),
@@ -97,7 +96,6 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(2)
         .constraints(
             [
                 Constraint::Length(3),
