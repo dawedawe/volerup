@@ -1,6 +1,6 @@
 # volerup
 
-TUI application simulating a CPU using the Vole machine language.
+TUI application simulating a CPU using the Vole machine language of Brookshear/BRylow.
 
 ## Usage
 

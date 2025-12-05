@@ -1,6 +1,6 @@
 # volerup
 
-TUI application and library implementing the Vole machine language.
+TUI application and library implementing the Vole machine language of Brookshear/Brylow.
 
 ## Usage
 

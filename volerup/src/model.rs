@@ -17,6 +17,7 @@ pub(crate) struct Model<'a> {
     pub(crate) focus: Focus,
     pub(crate) memory_scroll: usize,
     pub(crate) registers_scroll: usize,
+    pub(crate) show_help: bool,
     pub(crate) error_msg: Option<&'a str>,
 }
 
@@ -42,6 +43,7 @@ impl<'a> Model<'a> {
             focus: Focus::Memory,
             memory_scroll: 0,
             registers_scroll: 0,
+            show_help: false,
             error_msg: None,
         }
     }

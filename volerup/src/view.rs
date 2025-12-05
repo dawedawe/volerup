@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Flex, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    widgets::{Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
 use crate::model::{Focus, Model};
@@ -73,6 +73,12 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .margin(1)
         .constraints([Constraint::Min(70), Constraint::Min(2)].as_ref())
         .split(frame.area());
+
+    let help_screen_chunk = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints([Constraint::Min(1)].as_ref())
+        .split(whole_screen_chunks[0])[0];
 
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -198,13 +204,42 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": exec CPU cycle, "),
         Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": focus next control, "),
+        Span::raw(": switch focus, "),
         Span::styled("↑/↓", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": scroll up/down, "),
+        Span::raw(": scroll, "),
+        Span::styled("?", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": help, "),
         Span::styled("Esc/q", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": exit"),
     ];
     let text = Text::from(Line::from(msg));
     let help_message = Paragraph::new(text);
     frame.render_widget(help_message, help_msg_rect);
+
+    if model.show_help {
+        let instructions_help = vec![
+            Line::from("Vole Instructions:"),
+            Line::from("0x1RXY - LOAD memory cell XY into register R"),
+            Line::from("0x2RXY - LOAD value XY into register R"),
+            Line::from("0x3RXY - STORE value in register R in memory cell XY"),
+            Line::from("0x40RS - MOVE register R to register S"),
+            Line::from(
+                "0x5RST - ADD registers R and S as integers, store the result in register T",
+            ),
+            Line::from("0x6RST - ADD registers R and S as floats, store the result in register T"),
+            Line::from("0x7RST - OR registers R and S, store the result in register T"),
+            Line::from("0x8RST - AND registers R and S, store the result in register T"),
+            Line::from("0x9RST - XOR registers R and S, store the result in register T"),
+            Line::from("0xAR0X - ROTATE register R X times to the right"),
+            Line::from(
+                "0xBRXY - JUMP to instruction at memory cell XY if register R equals register 0",
+            ),
+            Line::from("0xC000 - HALT the execution"),
+        ];
+        let help_paragraph = Paragraph::new(instructions_help)
+            .style(style)
+            .block(Block::default().borders(Borders::ALL).title(" Help "));
+        frame.render_widget(Clear, help_screen_chunk);
+        frame.render_widget(help_paragraph, help_screen_chunk);
+    }
 }
