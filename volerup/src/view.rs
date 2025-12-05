@@ -93,7 +93,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)].as_ref())
         .split(whole_screen_chunks[1]);
     let error_msg_rect = center_horizontal(footer_chunks[0], 40);
-    let help_msg_rect = center_horizontal(footer_chunks[1], 113);
+    let help_msg_rect = center_horizontal(footer_chunks[1], 107);
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -197,7 +197,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     let msg = vec![
         Span::styled("r", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": load program and reset CPU, "),
-        Span::styled("Space", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": exec CPU cycle, "),
         Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": focus next control, "),

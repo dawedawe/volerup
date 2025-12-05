@@ -31,7 +31,7 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => Some(Msg::Exit),
         KeyCode::Char('r') => Some(Msg::Load),
-        KeyCode::Char(' ') => Some(Msg::Cycle),
+        KeyCode::Char('p') => Some(Msg::Cycle),
         KeyCode::Tab => Some(Msg::FocusNext),
         KeyCode::BackTab => Some(Msg::FocusPrevious),
         _ if model.focus == Focus::Program => Some(Msg::KeyInput {
@@ -44,20 +44,21 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
 }
 
 fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static str> {
+    fn parse_single(s: &str) -> Result<u8, ParseIntError> {
+        let s = s.trim().trim_start_matches("0x").trim_start_matches("0X");
+        u8::from_str_radix(s, 16)
+    }
+
     let parse_lines = lines
         .iter()
-        .filter_map(|line| {
-            let s = line
-                .trim()
-                .trim_start_matches("0x")
-                .trim_start_matches("0X");
-            if s.is_empty() {
-                None
-            } else {
-                Some(u8::from_str_radix(s, 16))
-            }
+        .map(|line| {
+            line.split_whitespace()
+                .map(parse_single)
+                .collect::<Vec<Result<u8, ParseIntError>>>()
         })
-        .collect::<Vec<Result<u8, ParseIntError>>>();
+        .collect::<Vec<Vec<Result<u8, ParseIntError>>>>()
+        .concat();
+
     if parse_lines.iter().any(|r| r.is_err()) {
         Result::Err("only byte values in hex notation allowed")
     } else {
@@ -146,6 +147,19 @@ mod tests {
         assert_eq!(r, vec![0x00, 0x01, 0xA2, 0xB3]);
     }
 
+    #[test]
+    fn test_parse_with_multiple_values_per_line() {
+        let lines: &[String] = &[
+            "0x00 0x01 0x02 0x03".to_string(),
+            "0xa1".to_string(),
+            "0xA2".to_string(),
+            "0xb3".to_string(),
+        ];
+        let r = parse_program_text(lines);
+        assert!(r.is_ok());
+        let r = r.unwrap();
+        assert_eq!(r, vec![0x00, 0x01, 0x02, 0x03, 0xA1, 0xA2, 0xB3]);
+    }
     #[test]
     fn test_parse_with_empty_lines() {
         let lines: &[String] = &[
