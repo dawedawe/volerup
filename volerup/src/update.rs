@@ -77,10 +77,15 @@ pub(crate) fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static s
     }
 }
 
+/// Update the Model based on it's current state and the Msg
 pub(crate) fn update(model: &mut Model, msg: Msg) {
     match msg {
         Msg::Exit => {
-            model.running = false;
+            if model.show_help {
+                model.show_help = false;
+            } else {
+                model.running = false;
+            }
         }
         Msg::Load => {
             let input = parse_program_text(model.program_textarea.lines());
