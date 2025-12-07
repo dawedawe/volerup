@@ -97,7 +97,6 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)].as_ref())
         .split(whole_screen_chunks[1]);
-    let error_msg_rect = center_horizontal(footer_chunks[0], 40);
     let help_msg_rect = center_horizontal(footer_chunks[1], 107);
 
     let left_chunks = Layout::default()
@@ -195,6 +194,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     if let Some(msg) = model.error_msg {
         let style = Style::default().fg(Color::Red);
         let error_msg_paragraph = Paragraph::new(msg).style(style);
+        let error_msg_rect = center_horizontal(footer_chunks[0], msg.len() as u16);
         frame.render_widget(error_msg_paragraph, error_msg_rect);
     }
 

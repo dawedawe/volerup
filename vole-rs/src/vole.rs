@@ -209,20 +209,27 @@ impl Cpu {
     }
 
     /// Do a full fetch-decode-ececute cycle
-    pub fn cycle(&mut self) {
+    /// # Returns
+    ///
+    /// false if instruction was illegal, true otherwise.
+    pub fn cycle(&mut self) -> bool {
         self.fetch();
         if let Some(opcode) = self.decode() {
             self.execute(opcode);
+            true
         } else {
-            panic!("illegal instruction")
+            self.halted = true;
+            false
         }
     }
 
     /// Run till halt
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> bool {
+        let mut r = true;
         while !self.halted {
-            self.cycle();
+            r = self.cycle();
         }
+        r
     }
 }
 
@@ -310,7 +317,7 @@ mod tests {
         let program = [0x14, 0xA3];
         let mut cpu = Cpu::init(&program);
         cpu.memory[0xA3] = 0xCD;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x04], 0xCD)
     }
 
@@ -318,7 +325,7 @@ mod tests {
     pub fn opcode_loadvalue_works() {
         let program = [0x20, 0xA3];
         let mut cpu = Cpu::init(&program);
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x00], 0xA3)
     }
 
@@ -327,7 +334,7 @@ mod tests {
         let program = [0x35, 0xB1];
         let mut cpu = Cpu::init(&program);
         cpu.registers[5] = 0x58;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.memory[0xB1], 0x58)
     }
 
@@ -336,7 +343,7 @@ mod tests {
         let program = [0x40, 0xA4];
         let mut cpu = Cpu::init(&program);
         cpu.registers[0xA] = 0xFF;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x04], 0xFF)
     }
 
@@ -346,7 +353,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x02] = 0x03;
         cpu.registers[0x06] = 0x05;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x07], 0x08)
     }
 
@@ -356,7 +363,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x04] = 0x03;
         cpu.registers[0x0E] = 0x05;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x03], 0x08)
     }
 
@@ -366,7 +373,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x0B] = 0xF0;
         cpu.registers[0x04] = 0x0F;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x0C], 0xFF)
     }
 
@@ -386,7 +393,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x0F] = 0xF3;
         cpu.registers[0x03] = 0x05;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x05], 0xF6)
     }
 
@@ -395,7 +402,7 @@ mod tests {
         let program = [0xA4, 0x03];
         let mut cpu = Cpu::init(&program);
         cpu.registers[0x04] = 0x07;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x04], 0xE0)
     }
 
@@ -406,7 +413,7 @@ mod tests {
         cpu.memory[0x3C] = 0xAB;
         cpu.registers[0x00] = 0x05;
         cpu.registers[0x04] = 0x05;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.program_counter, 0xAB)
     }
 
@@ -414,7 +421,7 @@ mod tests {
     pub fn opcode_halt_works() {
         let program = [0xC0];
         let mut cpu = Cpu::init(&program);
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert!(cpu.halted)
     }
 
@@ -422,7 +429,7 @@ mod tests {
     pub fn run_works_1() {
         let program = [0x14, 0x02, 0x34, 0x17, 0xC0, 0x00];
         let mut cpu = Cpu::init(&program);
-        cpu.run();
+        assert!(cpu.run());
         assert!(cpu.halted);
         assert_eq!(cpu.memory[0x17], 0x34)
     }
@@ -435,10 +442,26 @@ mod tests {
             cpu.memory[0xB0 + a] = program[a];
         });
         cpu.program_counter = 0xB0;
-        cpu.cycle();
+        assert!(cpu.cycle());
         assert_eq!(cpu.registers[0x03], 0x0F);
-        cpu.run();
+        assert!(cpu.run());
         assert!(cpu.halted);
         assert_eq!(cpu.memory[0xB8], 0xC3);
+    }
+
+    #[test]
+    pub fn cycle_with_illegal_instruction() {
+        let program = [0xD3, 0x02];
+        let mut cpu = Cpu::init(&program);
+        assert!(!cpu.cycle());
+        assert!(cpu.halted);
+    }
+
+    #[test]
+    pub fn run_with_illegal_instruction() {
+        let program = [0xD3, 0x02];
+        let mut cpu = Cpu::init(&program);
+        assert!(!cpu.run());
+        assert!(cpu.halted);
     }
 }
