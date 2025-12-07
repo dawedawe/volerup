@@ -99,7 +99,10 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
         }
         Msg::Cycle => {
             if !model.cpu.halted {
-                model.cpu.cycle();
+                let r = model.cpu.cycle();
+                if !r {
+                    model.error_msg = Some("illegal instruction");
+                }
             }
         }
         Msg::FocusNext => match model.focus {
