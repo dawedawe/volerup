@@ -17,11 +17,16 @@ fn render_list(
     rect: Rect,
     frame: &mut Frame,
 ) {
+    let len = values.len();
     let items = values
         .iter()
         .enumerate()
         .map(|(idx, reg)| {
-            let s = format!("{:2}: 0x{:02X} ", idx, reg);
+            let s = if len < 100 {
+                format!("{:2}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
+            } else {
+                format!("{:3}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
+            };
             Line::from(s).style(style)
         })
         .collect::<Vec<Line>>();
@@ -84,10 +89,10 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .direction(Direction::Horizontal)
         .constraints(
             [
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
+                Constraint::Length(34),
+                Constraint::Length(20),
+                Constraint::Length(20),
+                Constraint::Min(1),
             ]
             .as_ref(),
         )
@@ -112,12 +117,12 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         )
         .split(main_chunks[0]);
 
-    let cpu_state_rect = center_horizontal(left_chunks[0], 30);
-    let pc_rect = center_horizontal(left_chunks[1], 30);
-    let instr_reg_rect = center_horizontal(left_chunks[2], 30);
-    let regs_rect = center_horizontal(main_chunks[1], 20);
-    let mem_rect = center_horizontal(main_chunks[2], 20);
-    let prog_rect = center_horizontal(main_chunks[3], 20);
+    let cpu_state_rect = left_chunks[0];
+    let pc_rect = left_chunks[1];
+    let instr_reg_rect = left_chunks[2];
+    let regs_rect = main_chunks[1];
+    let mem_rect = main_chunks[2];
+    let prog_rect = main_chunks[3];
 
     let cpu_state = if model.cpu.halted {
         "HALTED"
