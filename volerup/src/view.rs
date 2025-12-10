@@ -102,7 +102,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)].as_ref())
         .split(whole_screen_chunks[1]);
-    let help_msg_rect = center_horizontal(footer_chunks[1], 107);
+    let help_msg_rect = footer_chunks[1];
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -208,16 +208,13 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         Span::raw(": load program and reset CPU, "),
         Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(": exec CPU cycle, "),
-        Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": switch focus, "),
-        Span::styled("↑/↓", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": scroll, "),
+        Span::styled("P", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(": run program, "),
         Span::styled("?", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": help, "),
-        Span::styled("Esc/q", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": exit"),
+        Span::raw(": help"),
     ];
     let text = Text::from(Line::from(msg));
+    let help_msg_rect = center_horizontal(help_msg_rect, text.width() as u16);
     let help_message = Paragraph::new(text);
     frame.render_widget(help_message, help_msg_rect);
 
