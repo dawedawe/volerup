@@ -12,6 +12,7 @@ volerup [path_to_file]
 
 **r**: Load the program into memory and reset the state of the CPU  
 **p**: Do a fetch, decode, execute cycle  
+**P**: Run loaded program to completion
 **Tab**: Switch focus to the next control  
 **↑** / **↓**: Scroll up/down  
 **?**: Toggle the help screen with the list of CPU instructions  
@@ -51,4 +52,6 @@ The last 12 bits define the operands.
 `0xAR0X` - `ROTATE` register `R` `X` times to the right  
 `0xBRXY` - `JUMP` to instruction at memory cell `XY` if register `R` equals register `0`  
 `0xC000` - `HALT` the execution  
- 
+
+If you focus on the `Program` listing, you can edit the instructions.  
+Load the program into memory to run it.

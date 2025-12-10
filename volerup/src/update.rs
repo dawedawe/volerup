@@ -11,6 +11,8 @@ pub(crate) enum Msg {
     Load,
     /// Do a CPU cycle of fetch, decode, execute
     Cycle,
+    /// Run program to completion
+    Run,
     /// Focus the next controll
     FocusNext,
     /// Focus the previous controll
@@ -39,6 +41,7 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
         KeyCode::Char('?') => Some(Msg::ToggleHelp),
         KeyCode::Char('r') => Some(Msg::Load),
         KeyCode::Char('p') => Some(Msg::Cycle),
+        KeyCode::Char('P') => Some(Msg::Run),
         KeyCode::Tab => Some(Msg::FocusNext),
         KeyCode::BackTab => Some(Msg::FocusPrevious),
         _ if model.focus == Focus::Program => Some(Msg::KeyInput {
@@ -100,6 +103,14 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
         Msg::Cycle => {
             if !model.cpu.halted {
                 let r = model.cpu.cycle();
+                if !r {
+                    model.error_msg = Some("illegal instruction");
+                }
+            }
+        }
+        Msg::Run => {
+            if !model.cpu.halted {
+                let r = model.cpu.run();
                 if !r {
                     model.error_msg = Some("illegal instruction");
                 }

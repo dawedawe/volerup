@@ -208,10 +208,8 @@ impl Cpu {
         }
     }
 
-    /// Do a full fetch-decode-ececute cycle
-    /// # Returns
-    ///
-    /// false if instruction was illegal, true otherwise.
+    /// Do a full fetch-decode-ececute cycle.
+    /// Returns false if instruction was illegal, true otherwise.
     pub fn cycle(&mut self) -> bool {
         self.fetch();
         if let Some(opcode) = self.decode() {
@@ -223,7 +221,8 @@ impl Cpu {
         }
     }
 
-    /// Run till halt
+    /// Run till halt.
+    /// Returns false if illegal instruction was fetched, true otherwise.
     pub fn run(&mut self) -> bool {
         let mut r = true;
         while !self.halted {
