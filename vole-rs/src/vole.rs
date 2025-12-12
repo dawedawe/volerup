@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::floating::Floating;
 
+/// Represents the state of the Vole-speaking CPU.
 #[derive(Debug)]
 pub struct Cpu {
     pub registers: [u8; 16],
@@ -12,6 +13,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    /// Creates a new [Cpu].
     pub fn new() -> Self {
         Cpu {
             registers: [0; 16],
@@ -22,6 +24,7 @@ impl Cpu {
         }
     }
 
+    /// Initializes a new [Cpu] with the given program loaded into memory.
     pub fn init(program: &[u8]) -> Self {
         let mut cpu = Cpu::new();
         if program.len() > cpu.memory.len() {
@@ -31,6 +34,7 @@ impl Cpu {
         cpu
     }
 
+    /// Depending on the [Cpu::program_counter], fetches the next instruction from memory.
     pub fn fetch(&mut self) {
         let instr_byte0 = self.memory[self.program_counter];
         let instr_byte1 = self.memory[self.program_counter + 1];
@@ -39,109 +43,116 @@ impl Cpu {
         self.instruction_register = instr;
     }
 
-    fn get_opcode_bits(instr: Instruction) -> u8 {
+    /// Get the bits representing the [OpCode].
+    pub fn get_opcode_bits(instr: Instruction) -> u8 {
         (instr >> 12) as u8
     }
 
+    /// Get the bits representing the first operand.
     pub fn get_operand1_bits(instr: Instruction) -> u8 {
         ((instr & 0x0F00) >> 8) as u8
     }
 
+    /// Get the bits representing the second operand.
     pub fn get_operand2_bits(instr: Instruction) -> u8 {
         ((instr & 0x00F0) >> 4) as u8
     }
 
+    /// Get the bits representing the third operand.
     pub fn get_operand3_bits(instr: Instruction) -> u8 {
         (instr & 0x000F) as u8
     }
 
+    /// Get the bits representing the second and third operand.
     pub fn get_operand23_bits(instr: Instruction) -> u8 {
         (instr & 0x00FF) as u8
     }
 
+    /// Get the bits representing the all operands.
     pub fn get_operand_bits(instr: Instruction) -> u16 {
         instr & 0x0FFF
     }
 
-    /// Decode the bits in the instruction_register into an OpCode
-    pub fn decode(&self) -> Option<OpCodes> {
+    /// Decode the bits in the [Cpu::instruction_register] into an [OpCode].
+    pub fn decode(&self) -> Option<OpCode> {
         let opcode_bits = Cpu::get_opcode_bits(self.instruction_register);
         let operand1 = Cpu::get_operand1_bits(self.instruction_register);
         let operand2 = Cpu::get_operand2_bits(self.instruction_register);
         let operand3 = Cpu::get_operand3_bits(self.instruction_register);
         match opcode_bits {
-            0x1 => Some(OpCodes::LoadAddr {
+            0x1 => Some(OpCode::LoadAddr {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
             }),
-            0x2 => Some(OpCodes::LoadValue {
+            0x2 => Some(OpCode::LoadValue {
                 reg: operand1,
                 value: Cpu::get_operand23_bits(self.instruction_register),
             }),
-            0x3 => Some(OpCodes::Store {
+            0x3 => Some(OpCode::Store {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
             }),
-            0x4 => Some(OpCodes::Move {
+            0x4 => Some(OpCode::Move {
                 source_reg: operand2,
                 target_reg: operand3,
             }),
-            0x5 => Some(OpCodes::AddInt {
+            0x5 => Some(OpCode::AddInt {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
             }),
-            0x6 => Some(OpCodes::AddFloat {
+            0x6 => Some(OpCode::AddFloat {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
             }),
-            0x7 => Some(OpCodes::Or {
+            0x7 => Some(OpCode::Or {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
             }),
-            0x8 => Some(OpCodes::And {
+            0x8 => Some(OpCode::And {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
             }),
-            0x9 => Some(OpCodes::Xor {
+            0x9 => Some(OpCode::Xor {
                 target_reg: operand1,
                 reg1: operand2,
                 reg2: operand3,
             }),
-            0xA => Some(OpCodes::Rotate {
+            0xA => Some(OpCode::Rotate {
                 reg: operand1,
                 times: operand3,
             }),
-            0xB => Some(OpCodes::Jump {
+            0xB => Some(OpCode::Jump {
                 reg: operand1,
                 addr: Cpu::get_operand23_bits(self.instruction_register),
             }),
-            0xC => Some(OpCodes::Halt),
+            0xC => Some(OpCode::Halt),
             _ => None,
         }
     }
 
-    fn execute(&mut self, opcode: OpCodes) {
+    /// Execute the given [OpCode].
+    pub fn execute(&mut self, opcode: OpCode) {
         match opcode {
-            OpCodes::LoadAddr { reg, addr: address } => {
+            OpCode::LoadAddr { reg, addr: address } => {
                 self.registers[reg as usize] = self.memory[address as usize];
             }
-            OpCodes::LoadValue { reg, value } => {
+            OpCode::LoadValue { reg, value } => {
                 self.registers[reg as usize] = value;
             }
-            OpCodes::Store { reg, addr } => {
+            OpCode::Store { reg, addr } => {
                 self.memory[addr as usize] = self.registers[reg as usize];
             }
-            OpCodes::Move {
+            OpCode::Move {
                 source_reg,
                 target_reg,
             } => {
                 self.registers[target_reg as usize] = self.registers[source_reg as usize];
             }
-            OpCodes::AddInt {
+            OpCode::AddInt {
                 target_reg,
                 reg1,
                 reg2,
@@ -149,7 +160,7 @@ impl Cpu {
                 self.registers[target_reg as usize] =
                     self.registers[reg1 as usize] + self.registers[reg2 as usize];
             }
-            OpCodes::AddFloat {
+            OpCode::AddFloat {
                 target_reg,
                 reg1,
                 reg2,
@@ -164,7 +175,7 @@ impl Cpu {
                 let f3 = Floating::encode(sum);
                 self.registers[target_reg as usize] = f3.value
             }
-            OpCodes::Or {
+            OpCode::Or {
                 target_reg,
                 reg1,
                 reg2,
@@ -172,7 +183,7 @@ impl Cpu {
                 self.registers[target_reg as usize] =
                     self.registers[reg1 as usize] | self.registers[reg2 as usize];
             }
-            OpCodes::And {
+            OpCode::And {
                 target_reg,
                 reg1,
                 reg2,
@@ -180,7 +191,7 @@ impl Cpu {
                 self.registers[target_reg as usize] =
                     self.registers[reg1 as usize] & self.registers[reg2 as usize];
             }
-            OpCodes::Xor {
+            OpCode::Xor {
                 target_reg,
                 reg1,
                 reg2,
@@ -188,22 +199,22 @@ impl Cpu {
                 self.registers[target_reg as usize] =
                     self.registers[reg1 as usize] ^ self.registers[reg2 as usize];
             }
-            OpCodes::Rotate { reg, times } => {
+            OpCode::Rotate { reg, times } => {
                 self.registers[reg as usize] =
                     self.registers[reg as usize].rotate_right(times as u32)
             }
-            OpCodes::Jump { reg, addr } => {
+            OpCode::Jump { reg, addr } => {
                 if self.registers[0] == self.registers[reg as usize] {
                     self.program_counter = self.memory[addr as usize] as usize;
                 }
             }
-            OpCodes::Halt => {
+            OpCode::Halt => {
                 self.halted = true;
             }
         }
 
         match opcode {
-            OpCodes::Jump { reg: _, addr: _ } => (),
+            OpCode::Jump { reg: _, addr: _ } => (),
             _ => self.program_counter += 2,
         }
     }
@@ -238,36 +249,50 @@ impl Default for Cpu {
     }
 }
 
+/// Type representing the 16 bit instructions of Vole.
 pub type Instruction = u16;
 
-pub enum OpCodes {
-    LoadAddr { reg: u8, addr: u8 },                  // 0x1
-    LoadValue { reg: u8, value: u8 },                // 0x2
-    Store { reg: u8, addr: u8 },                     // 0x3
-    Move { source_reg: u8, target_reg: u8 },         // 0x4
-    AddInt { target_reg: u8, reg1: u8, reg2: u8 },   // 0x5
-    AddFloat { target_reg: u8, reg1: u8, reg2: u8 }, // 0x6
-    Or { target_reg: u8, reg1: u8, reg2: u8 },       // 0x7
-    And { target_reg: u8, reg1: u8, reg2: u8 },      // 0x8
-    Xor { target_reg: u8, reg1: u8, reg2: u8 },      // 0x9
-    Rotate { reg: u8, times: u8 },                   // 0xA
-    Jump { reg: u8, addr: u8 },                      // 0xB
-    Halt,                                            // 0xC
+/// The Vole opcodes.
+pub enum OpCode {
+    /// 0x1RXY - LOAD memory cell XY into register R.
+    LoadAddr { reg: u8, addr: u8 },
+    /// 0x2RXY - LOAD value XY into register R.
+    LoadValue { reg: u8, value: u8 },
+    /// 0x3RXY - STORE value in register R in memory cell XY.
+    Store { reg: u8, addr: u8 },
+    /// 0x40RS - MOVE register R to register S.
+    Move { source_reg: u8, target_reg: u8 },
+    /// 0x5RST - ADD registers R and S as integers, store the result in register T.
+    AddInt { target_reg: u8, reg1: u8, reg2: u8 },
+    /// 0x6RST - ADD registers R and S as floats, store the result in register T.
+    AddFloat { target_reg: u8, reg1: u8, reg2: u8 },
+    /// 0x7RST - OR registers R and S, store the result in register T.
+    Or { target_reg: u8, reg1: u8, reg2: u8 },
+    /// 0x8RST - AND registers R and S, store the result in register T.
+    And { target_reg: u8, reg1: u8, reg2: u8 },
+    /// 0x9RST - XOR registers R and S, store the result in register T.
+    Xor { target_reg: u8, reg1: u8, reg2: u8 },
+    /// 0xAR0X - ROTATE register R X times to the right.
+    Rotate { reg: u8, times: u8 },
+    /// 0xBRXY - JUMP to instruction at memory cell XY if register R equals register 0.
+    Jump { reg: u8, addr: u8 },
+    /// "0xC000 - HALT the execution.
+    Halt,
 }
 
-impl Display for OpCodes {
+impl Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OpCodes::LoadAddr { reg, addr } => write!(f, "LOADADDR 0x{:02X} 0x{:02X}", reg, addr),
-            OpCodes::LoadValue { reg, value } => {
+            OpCode::LoadAddr { reg, addr } => write!(f, "LOADADDR 0x{:02X} 0x{:02X}", reg, addr),
+            OpCode::LoadValue { reg, value } => {
                 write!(f, "LOADVALUE 0x{:02X} 0x{:02X}", reg, value)
             }
-            OpCodes::Store { reg, addr } => write!(f, "STORE 0x{:02X} 0x{:02X}", reg, addr),
-            OpCodes::Move {
+            OpCode::Store { reg, addr } => write!(f, "STORE 0x{:02X} 0x{:02X}", reg, addr),
+            OpCode::Move {
                 source_reg,
                 target_reg,
             } => write!(f, "MOVE 0x{:02X} 0x{:02X}", source_reg, target_reg),
-            OpCodes::AddInt {
+            OpCode::AddInt {
                 target_reg,
                 reg1,
                 reg2,
@@ -276,7 +301,7 @@ impl Display for OpCodes {
                 "ADDINT 0x{:02X} 0x{:02X} 0x{:02X}",
                 target_reg, reg1, reg2
             ),
-            OpCodes::AddFloat {
+            OpCode::AddFloat {
                 target_reg,
                 reg1,
                 reg2,
@@ -285,24 +310,24 @@ impl Display for OpCodes {
                 "ADDFLOAT 0x{:02X} 0x{:02X} 0x{:02X}",
                 target_reg, reg1, reg2
             ),
-            OpCodes::Or {
+            OpCode::Or {
                 target_reg,
                 reg1,
                 reg2,
             } => write!(f, "OR 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
-            OpCodes::And {
+            OpCode::And {
                 target_reg,
                 reg1,
                 reg2,
             } => write!(f, "AND 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
-            OpCodes::Xor {
+            OpCode::Xor {
                 target_reg,
                 reg1,
                 reg2,
             } => write!(f, "XOR 0x{:02X} 0x{:02X} 0x{:02X}", target_reg, reg1, reg2),
-            OpCodes::Rotate { reg, times } => write!(f, "ROTATE 0x{:02X} 0x{:02X}", reg, times),
-            OpCodes::Jump { reg, addr } => write!(f, "JUMP 0x{:02X} 0x{:02X}", reg, addr),
-            OpCodes::Halt => write!(f, "HALT"),
+            OpCode::Rotate { reg, times } => write!(f, "ROTATE 0x{:02X} 0x{:02X}", reg, times),
+            OpCode::Jump { reg, addr } => write!(f, "JUMP 0x{:02X} 0x{:02X}", reg, addr),
+            OpCode::Halt => write!(f, "HALT"),
         }
     }
 }
