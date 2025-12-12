@@ -1,12 +1,16 @@
+/// An eight bit floating point value.
 pub struct Floating {
+    /// The bits making up the sign bit, the exponent and the mantissa.
     pub value: u8,
 }
 
 impl Floating {
+    /// Gets the value of the sign bit.
     pub fn sign_bit(&self) -> u8 {
         self.value >> 7
     }
 
+    /// Gets the value of the exponent.
     pub fn exponent(&self) -> i8 {
         let bits = (self.value & 0x70) >> 4;
         match bits {
@@ -22,10 +26,12 @@ impl Floating {
         }
     }
 
+    /// Gets the mantissa.
     pub fn mantissa(&self) -> u8 {
         self.value & 0x0F
     }
 
+    /// Decodes the [Floating] into an [f32].
     pub fn decode(&self) -> f32 {
         let sign = self.sign_bit();
         let mantissa = self.mantissa();
@@ -55,6 +61,7 @@ impl Floating {
         if sign == 1 { -abs } else { abs }
     }
 
+    /// Encodes an [f32] into a [Floating].
     pub fn encode(value: f32) -> Floating {
         let sign = if value < 0.0 { 1 } else { 0 };
         let int_value = (value as i8).abs();
