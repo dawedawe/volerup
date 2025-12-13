@@ -12,6 +12,7 @@ fn render_list(
     values: &[u8],
     title: &str,
     style: Style,
+    line_to_highlight: Option<usize>,
     focused: bool,
     vertical_scroll: usize,
     rect: Rect,
@@ -26,6 +27,15 @@ fn render_list(
                 format!("{:2}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
             } else {
                 format!("{:3}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
+            };
+            let style = if let Some(idx_to_highlight) = line_to_highlight
+                && idx_to_highlight == idx
+            {
+                style
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED)
+            } else {
+                style
             };
             Line::from(s).style(style)
         })
@@ -63,6 +73,7 @@ fn render_list(
     );
 }
 
+/// Render the TUI from the model
 pub(crate) fn view(model: &Model, frame: &mut Frame) {
     let style: Style = Style::default().fg(Color::Green);
 
@@ -160,6 +171,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         &model.cpu.registers,
         "Registers",
         style,
+        model.modified_register,
         model.focus == Focus::Registers,
         model.registers_scroll,
         regs_rect,
@@ -170,6 +182,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         &model.cpu.memory,
         "Main Memory",
         style,
+        model.modified_memory,
         model.focus == Focus::Memory,
         model.memory_scroll,
         mem_rect,

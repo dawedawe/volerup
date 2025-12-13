@@ -104,10 +104,35 @@ pub(crate) fn update(model: &mut Model, msg: Msg) {
         }
         Msg::Cycle => {
             if !model.cpu.halted {
+                let old_registers = model.cpu.registers;
+                let old_memory = model.cpu.memory;
+
                 let r = model.cpu.cycle();
                 if !r {
                     model.error_msg = Some("illegal instruction");
                 }
+
+                let new_registers = model.cpu.registers;
+                let new_memory = model.cpu.memory;
+                model.modified_register = old_registers
+                    .iter()
+                    .zip(new_registers)
+                    .enumerate()
+                    .find_map(
+                        |(idx, (old, new))| {
+                            if *old != new { Some(idx) } else { None }
+                        },
+                    );
+                model.modified_memory =
+                    old_memory
+                        .iter()
+                        .zip(new_memory)
+                        .enumerate()
+                        .find_map(
+                            |(idx, (old, new))| {
+                                if *old != new { Some(idx) } else { None }
+                            },
+                        );
             }
         }
         Msg::Run => {
