@@ -81,7 +81,7 @@ impl Floating {
             0x02 // -2
         } else if fract_value >= 0.0625 {
             0x01 // -3
-        } else if fract_value >= 0.03125 {
+        } else if fract_value >= 0.03125 || int_value == 0 {
             0x00 // -4
         } else {
             panic!("unrepresentable")
@@ -187,6 +187,9 @@ mod tests {
 
         let f = Floating { value: 0b10101011 };
         assert_eq!(f.decode(), -0.171875);
+
+        let f = Floating { value: 0b00000000 };
+        assert_eq!(f.decode(), 0.0);
     }
 
     #[test]
@@ -225,5 +228,8 @@ mod tests {
 
         let f = Floating::encode(-4.375);
         assert_eq!(f.value, 0b11111000);
+
+        let f = Floating::encode(0.0);
+        assert_eq!(f.value, 0b00000000);
     }
 }
