@@ -2,6 +2,8 @@ use ratatui::style::{Color, Style};
 use tui_textarea::TextArea;
 use vole_rs::vole::Cpu;
 
+use crate::update::parse_program_text;
+
 #[derive(Debug, PartialEq)]
 pub(crate) enum Focus {
     Registers,
@@ -45,6 +47,34 @@ impl<'a> Model<'a> {
             registers_scroll: 0,
             show_help: false,
             error_msg: None,
+        }
+    }
+
+    pub(crate) fn init_from_source(program_text: &str) -> Result<Model<'a>, String> {
+        let lines = program_text
+            .lines()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        let program = parse_program_text(&lines);
+        let mut program_textarea = TextArea::new(lines);
+        let style = Style::default().fg(Color::Green);
+        program_textarea.set_line_number_style(style);
+        program_textarea.set_style(style);
+        match program {
+            Ok(program) => {
+                let model = Model {
+                    cpu: Cpu::init(&program),
+                    program_textarea,
+                    running: true,
+                    focus: Focus::Memory,
+                    memory_scroll: 0,
+                    registers_scroll: 0,
+                    show_help: false,
+                    error_msg: None,
+                };
+                Ok(model)
+            }
+            Err(e) => Err(e.into()),
         }
     }
 }
