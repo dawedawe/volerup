@@ -5,7 +5,7 @@ pub mod view;
 use std::env;
 
 use model::Model;
-use update::{handle_event, parse_program_text, update};
+use update::{handle_event, update};
 use view::view;
 
 fn main() -> color_eyre::Result<()> {
@@ -35,17 +35,7 @@ fn get_model<'a>(args: Vec<String>) -> Result<Model<'a>, String> {
         Ok(Model::default())
     } else if args.len() == 2 {
         match std::fs::read_to_string(args[1].as_str()) {
-            Ok(input) => {
-                let lines = input
-                    .lines()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<String>>();
-                let program = parse_program_text(&lines);
-                match program {
-                    Ok(program) => Ok(Model::init(program)),
-                    Err(e) => Err(e.into()),
-                }
-            }
+            Ok(input) => Model::init_from_source(input.as_str()),
             Err(e) => {
                 let s = e.to_string();
                 Err(s)
