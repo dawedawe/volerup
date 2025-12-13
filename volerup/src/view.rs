@@ -8,16 +8,21 @@ use ratatui::{
 
 use crate::model::{Focus, Model};
 
+fn default_style() -> Style {
+    Style::default().fg(Color::Green)
+}
+
 fn render_list(
     values: &[u8],
     title: &str,
-    style: Style,
     line_to_highlight: Option<usize>,
     focused: bool,
     vertical_scroll: usize,
     rect: Rect,
     frame: &mut Frame,
 ) {
+    let style: Style = default_style();
+
     let len = values.len();
     let items = values
         .iter()
@@ -75,7 +80,7 @@ fn render_list(
 
 /// Render the TUI from the model
 pub(crate) fn view(model: &Model, frame: &mut Frame) {
-    let style: Style = Style::default().fg(Color::Green);
+    let style: Style = default_style();
 
     fn center_horizontal(area: Rect, width: u16) -> Rect {
         let [area] = Layout::horizontal([Constraint::Length(width)])
@@ -170,7 +175,6 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     render_list(
         &model.cpu.registers,
         "Registers",
-        style,
         model.modified_register,
         model.focus == Focus::Registers,
         model.registers_scroll,
@@ -181,7 +185,6 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     render_list(
         &model.cpu.memory,
         "Main Memory",
-        style,
         model.modified_memory,
         model.focus == Focus::Memory,
         model.memory_scroll,
