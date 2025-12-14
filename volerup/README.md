@@ -1,6 +1,6 @@
 # volerup
 
-TUI application simulating a CPU using the Vole machine language of Brookshear/BRylow.
+TUI application simulating a CPU using Vole machine language from the book *Computer Science: An Overview* by Glenn Brookshear and Dennis Brylow.
 
 ## CLI Usage
 
@@ -12,7 +12,7 @@ volerup [path_to_file]
 
 **r**: Load the program into memory and reset the state of the CPU  
 **p**: Do a fetch, decode, execute cycle  
-**P**: Run loaded program to completion
+**P**: Run loaded program to completion  
 **Tab**: Switch focus to the next control  
 **↑** / **↓**: Scroll up/down  
 **?**: Toggle the help screen with the list of CPU instructions  
