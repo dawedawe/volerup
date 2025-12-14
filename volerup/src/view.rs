@@ -127,6 +127,7 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
                 Constraint::Length(3),
                 Constraint::Length(3),
                 Constraint::Length(3),
+                Constraint::Length(3),
                 Constraint::Min(1),
             ]
             .as_ref(),
@@ -134,21 +135,29 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .split(main_chunks[0]);
 
     let cpu_state_rect = left_chunks[0];
-    let pc_rect = left_chunks[1];
-    let instr_reg_rect = left_chunks[2];
+    let cycle_rect = left_chunks[1];
+    let pc_rect = left_chunks[2];
+    let instr_reg_rect = left_chunks[3];
     let regs_rect = main_chunks[1];
     let mem_rect = main_chunks[2];
     let prog_rect = main_chunks[3];
 
-    let cpu_state = if model.cpu.halted {
-        "HALTED"
-    } else {
-        "RUNNING"
+    let cpu_state_paragraph = {
+        let cpu_state = if model.cpu.halted {
+            "HALTED"
+        } else {
+            "RUNNING"
+        };
+        Paragraph::new(cpu_state)
+            .style(style)
+            .block(Block::default().borders(Borders::ALL).title(" CPU State "))
     };
-    let cpu_state_paragraph = Paragraph::new(cpu_state)
-        .style(style)
-        .block(Block::default().borders(Borders::ALL).title(" CPU State "));
     frame.render_widget(cpu_state_paragraph, cpu_state_rect);
+
+    let cycle_paragraph = Paragraph::new(model.cpu.cycle.to_string())
+        .style(style)
+        .block(Block::default().borders(Borders::ALL).title(" Cycle "));
+    frame.render_widget(cycle_paragraph, cycle_rect);
 
     let pc_paragraph = Paragraph::new(model.cpu.program_counter.to_string())
         .style(style)
@@ -159,17 +168,19 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         );
     frame.render_widget(pc_paragraph, pc_rect);
 
-    let opcode = if let Some(opcode) = model.cpu.decode() {
-        format!("({})", opcode)
-    } else {
-        "".to_string()
+    let instr_reg_paragraph = {
+        let opcode = if let Some(opcode) = model.cpu.decode() {
+            format!("({})", opcode)
+        } else {
+            "".to_string()
+        };
+        let instr = format!("0x{:02X} {}", model.cpu.instruction_register, opcode);
+        Paragraph::new(instr).style(style).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Instruction Register "),
+        )
     };
-    let instr = format!("0x{:02X} {}", model.cpu.instruction_register, opcode);
-    let instr_reg_paragraph = Paragraph::new(instr).style(style).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" Instruction Register "),
-    );
     frame.render_widget(instr_reg_paragraph, instr_reg_rect);
 
     render_list(
@@ -219,19 +230,21 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         frame.render_widget(error_msg_paragraph, error_msg_rect);
     }
 
-    let msg = vec![
-        Span::styled("r", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": load program and reset CPU, "),
-        Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": exec CPU cycle, "),
-        Span::styled("P", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": run program, "),
-        Span::styled("?", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(": help"),
-    ];
-    let text = Text::from(Line::from(msg));
-    let help_msg_rect = center_horizontal(help_msg_rect, text.width() as u16);
-    let help_message = Paragraph::new(text);
+    let (help_message, help_msg_rect) = {
+        let usage_lines = vec![
+            Span::styled("r", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(": load program and reset CPU, "),
+            Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(": exec CPU cycle, "),
+            Span::styled("P", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(": run program, "),
+            Span::styled("?", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(": help"),
+        ];
+        let text = Text::from(Line::from(usage_lines));
+        let help_msg_rect = center_horizontal(help_msg_rect, text.width() as u16);
+        (Paragraph::new(text), help_msg_rect)
+    };
     frame.render_widget(help_message, help_msg_rect);
 
     if model.show_help {

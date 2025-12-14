@@ -5,10 +5,17 @@ use crate::floating::Floating;
 /// Represents the state of the Vole-speaking CPU.
 #[derive(Debug)]
 pub struct Cpu {
+    /// The general purpose registers.
     pub registers: [u8; 16],
+    /// The main memory.
     pub memory: [u8; 256],
+    /// Points to the next instruction in memory to fetch.
     pub program_counter: usize,
+    /// Holds the next instruction to decode and execute.
     pub instruction_register: u16,
+    /// Counts how many cycles have been processed.
+    pub cycle: u32,
+    /// True if the [Cpu] has halted, false otherwise.
     pub halted: bool,
 }
 
@@ -20,6 +27,7 @@ impl Cpu {
             memory: [0; 256],
             program_counter: 0,
             instruction_register: 0x0000,
+            cycle: 0,
             halted: false,
         }
     }
@@ -225,6 +233,7 @@ impl Cpu {
         self.fetch();
         if let Some(opcode) = self.decode() {
             self.execute(opcode);
+            self.cycle = self.cycle.wrapping_add(1);
             true
         } else {
             self.halted = true;
@@ -341,7 +350,9 @@ mod tests {
         let program = [0x14, 0xA3];
         let mut cpu = Cpu::init(&program);
         cpu.memory[0xA3] = 0xCD;
+        assert_eq!(cpu.cycle, 0);
         assert!(cpu.cycle());
+        assert_eq!(cpu.cycle, 1);
         assert_eq!(cpu.registers[0x04], 0xCD)
     }
 
@@ -455,7 +466,8 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         assert!(cpu.run());
         assert!(cpu.halted);
-        assert_eq!(cpu.memory[0x17], 0x34)
+        assert_eq!(cpu.memory[0x17], 0x34);
+        assert_eq!(cpu.cycle, 3);
     }
 
     #[test]
@@ -479,6 +491,7 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         assert!(!cpu.cycle());
         assert!(cpu.halted);
+        assert_eq!(cpu.cycle, 0);
     }
 
     #[test]
@@ -487,5 +500,6 @@ mod tests {
         let mut cpu = Cpu::init(&program);
         assert!(!cpu.run());
         assert!(cpu.halted);
+        assert_eq!(cpu.cycle, 0);
     }
 }
