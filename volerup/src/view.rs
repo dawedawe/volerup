@@ -27,11 +27,11 @@ fn render_list(
     let items = values
         .iter()
         .enumerate()
-        .map(|(idx, reg)| {
+        .map(|(idx, value)| {
             let s = if len < 100 {
-                format!("{:2}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
+                format!("{:2} (0x{:02X}): 0x{:02X} ({:3})", idx, idx, value, value)
             } else {
-                format!("{:3}(0x{:02X}): 0x{:02X} ", idx, idx, reg)
+                format!("{:3} (0x{:02X}): 0x{:02X} ({:3})", idx, idx, value, value)
             };
             let style = if let Some(idx_to_highlight) = line_to_highlight
                 && idx_to_highlight == idx
@@ -106,8 +106,8 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
         .constraints(
             [
                 Constraint::Length(34),
-                Constraint::Length(20),
-                Constraint::Length(20),
+                Constraint::Length(24),
+                Constraint::Length(25),
                 Constraint::Min(1),
             ]
             .as_ref(),
