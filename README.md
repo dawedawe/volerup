@@ -54,4 +54,7 @@ The last 12 bits define the operands.
 `0xC000` - `HALT` the execution  
 
 If you focus on the `Program` listing, you can edit the instructions.  
+You can add comments to your code with `//`.  
 Load the program into memory to run it.
+
+![show.gif](./volerup/vhs/show.gif)
