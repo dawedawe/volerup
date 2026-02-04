@@ -34,7 +34,16 @@ impl<'a> Default for Model<'a> {
 
 impl<'a> Model<'a> {
     pub(crate) fn init(program: Vec<u8>) -> Self {
-        let program_text = program.iter().map(|h| format!("0x{:02X}", h)).collect();
+        let program_text = program
+            .chunks(2)
+            .map(|h| {
+                if h.len() == 2 {
+                    format!("0x{:02X}{:02X}", h[0], h[1])
+                } else {
+                    format!("0x{:02X}", h[0])
+                }
+            })
+            .collect();
         let mut program_textarea = TextArea::new(program_text);
         let style = Style::default().fg(Color::Green);
         program_textarea.set_line_number_style(style);

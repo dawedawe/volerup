@@ -54,9 +54,23 @@ fn on_key_event(model: &mut Model, key: KeyEvent) -> Option<Msg> {
 }
 
 pub(crate) fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static str> {
-    fn parse_single_byte(s: &str) -> Result<u8, ParseIntError> {
+    fn parse_single_word(s: &str) -> Result<Vec<u8>, ParseIntError> {
         let s = s.trim().trim_start_matches("0x").trim_start_matches("0X");
-        u8::from_str_radix(s, 16)
+        if s.len() >= 3 {
+            match u16::from_str_radix(s, 16) {
+                Ok(u16) => {
+                    let f = (u16 >> 8) as u8;
+                    let s = u16 as u8;
+                    Ok(vec![f, s])
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            match u8::from_str_radix(s, 16) {
+                Ok(u8) => Ok(vec![u8]),
+                Err(e) => Err(e),
+            }
+        }
     }
 
     let parse_lines = lines
@@ -65,10 +79,10 @@ pub(crate) fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static s
         .map(|line| {
             let line = line.splitn(2, "//").collect::<Vec<&str>>()[0];
             line.split_whitespace()
-                .map(parse_single_byte)
-                .collect::<Vec<Result<u8, ParseIntError>>>()
+                .map(parse_single_word)
+                .collect::<Vec<Result<Vec<u8>, ParseIntError>>>()
         })
-        .collect::<Vec<Vec<Result<u8, ParseIntError>>>>()
+        .collect::<Vec<Vec<Result<Vec<u8>, ParseIntError>>>>()
         .concat();
 
     if parse_lines.iter().any(|r| r.is_err()) {
@@ -77,7 +91,9 @@ pub(crate) fn parse_program_text(lines: &[String]) -> Result<Vec<u8>, &'static s
         let input = parse_lines
             .into_iter()
             .map(|r| r.expect("expected a parsed u8"))
-            .collect::<Vec<u8>>();
+            .collect::<Vec<Vec<u8>>>()
+            .concat();
+
         Result::Ok(input)
     }
 }
@@ -201,6 +217,15 @@ mod tests {
         assert!(r.is_ok());
         let r = r.unwrap();
         assert_eq!(r, vec![0x00, 0x01, 0xA2, 0xB3]);
+    }
+
+    #[test]
+    fn test_parse_2byte_form() {
+        let lines: &[String] = &["0x1234".to_string(), "0xA2b3".to_string()];
+        let r = parse_program_text(lines);
+        assert!(r.is_ok());
+        let r = r.unwrap();
+        assert_eq!(r, vec![0x12, 0x34, 0xA2, 0xB3]);
     }
 
     #[test]

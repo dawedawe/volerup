@@ -74,7 +74,6 @@ Tab Sleep 500ms
 Down Sleep 500ms
 Down Sleep 500ms
 Down Sleep 500ms
-Down Sleep 500ms
 Enter Sleep 500ms
 Up Sleep 500ms
 Type "// halt" Sleep 2s
