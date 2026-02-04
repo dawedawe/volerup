@@ -250,22 +250,22 @@ pub(crate) fn view(model: &Model, frame: &mut Frame) {
     if model.show_help {
         let instructions_help = vec![
             Line::from("Vole Instructions:"),
-            Line::from("0x1 RXY - LOAD memory cell XY into register R"),
-            Line::from("0x2 RXY - LOAD value XY into register R"),
-            Line::from("0x3 RXY - STORE value in register R in memory cell XY"),
-            Line::from("0x4 0RS - MOVE register R to register S"),
+            Line::from("0x1RXY - LOAD memory cell XY into register R"),
+            Line::from("0x2RXY - LOAD value XY into register R"),
+            Line::from("0x3RXY - STORE value in register R in memory cell XY"),
+            Line::from("0x40RS - MOVE register R to register S"),
             Line::from(
-                "0x5 RST - ADD registers S and T as integers, store the result in register R",
+                "0x5RST - ADD registers S and T as integers, store the result in register R",
             ),
-            Line::from("0x6 RST - ADD registers S and T as floats, store the result in register R"),
-            Line::from("0x7 RST - OR registers S and T, store the result in register R"),
-            Line::from("0x8 RST - AND registers S and T, store the result in register R"),
-            Line::from("0x9 RST - XOR registers S and T, store the result in register R"),
-            Line::from("0xA R0X - ROTATE register R X times to the right"),
+            Line::from("0x6RST - ADD registers S and T as floats, store the result in register R"),
+            Line::from("0x7RST - OR registers S and T, store the result in register R"),
+            Line::from("0x8RST - AND registers S and T, store the result in register R"),
+            Line::from("0x9RST - XOR registers S and T, store the result in register R"),
+            Line::from("0xAR0X - ROTATE register R X times to the right"),
             Line::from(
-                "0xB RXY - JUMP to instruction at memory cell XY if register R equals register 0",
+                "0xBRXY - JUMP to instruction at memory cell XY if register R equals register 0",
             ),
-            Line::from("0xC 000 - HALT the execution"),
+            Line::from("0xC000 - HALT the execution"),
         ];
         let help_paragraph = Paragraph::new(instructions_help)
             .style(style)
